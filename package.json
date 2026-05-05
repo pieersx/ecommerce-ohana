@@ -1,0 +1,15 @@
+{
+  "name": "ecommerce-ohana",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d postgres",
+    "prisma:generate": "pnpm --filter ohana-backend prisma:generate",
+    "dev:backend": "pnpm --filter ohana-backend dev",
+    "start:backend": "pnpm --filter ohana-backend start",
+    "dev:frontend": "pnpm --filter ohana-frontend dev",
+    "build:frontend": "pnpm --filter ohana-frontend build"
+  }
+}

@@ -1,0 +1,116 @@
+CREATE TABLE IF NOT EXISTS usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre_completo VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    rol VARCHAR(20) NOT NULL DEFAULT 'cliente' CHECK (rol IN ('admin', 'cliente')),
+    telefono VARCHAR(20),
+    dni_ruc VARCHAR(20),
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS categorias (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS productos (
+    id_producto SERIAL PRIMARY KEY,
+    id_categoria INT REFERENCES categorias(id_categoria) ON DELETE SET NULL,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    precio_base NUMERIC(10,2) NOT NULL CHECK (precio_base >= 0),
+    stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    imagen_url VARCHAR(255)
+);
+
+CREATE TABLE IF NOT EXISTS escalas_precios (
+    id_escala SERIAL PRIMARY KEY,
+    id_producto INT NOT NULL REFERENCES productos(id_producto) ON DELETE CASCADE,
+    cantidad_min INT NOT NULL CHECK (cantidad_min > 0),
+    precio_unitario NUMERIC(10,2) NOT NULL CHECK (precio_unitario >= 0),
+    CONSTRAINT uq_escala_producto UNIQUE (id_producto, cantidad_min)
+);
+
+CREATE TABLE IF NOT EXISTS distritos (
+    id_distrito SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    costo_delivery NUMERIC(10,2) NOT NULL CHECK (costo_delivery >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS pedidos (
+    id_pedido SERIAL PRIMARY KEY,
+    id_usuario INT NOT NULL REFERENCES usuarios(id_usuario),
+    id_distrito INT NOT NULL REFERENCES distritos(id_distrito),
+    direccion_envio TEXT NOT NULL,
+    fecha_pedido TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Enviado', 'Entregado')),
+    metodo_pago VARCHAR(50),
+    total_productos NUMERIC(12,2) NOT NULL DEFAULT 0,
+    costo_envio NUMERIC(10,2) NOT NULL DEFAULT 0,
+    monto_total NUMERIC(12,2) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS detalle_pedidos (
+    id_detalle SERIAL PRIMARY KEY,
+    id_pedido INT NOT NULL REFERENCES pedidos(id_pedido) ON DELETE CASCADE,
+    id_producto INT NOT NULL REFERENCES productos(id_producto),
+    cantidad INT NOT NULL CHECK (cantidad > 0),
+    precio_unitario_fijado NUMERIC(10,2) NOT NULL CHECK (precio_unitario_fijado >= 0),
+    texto_personalizado TEXT,
+    tecnica_personalizacion VARCHAR(50),
+    subtotal NUMERIC(12,2) NOT NULL CHECK (subtotal >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(id_categoria);
+CREATE INDEX IF NOT EXISTS idx_escalas_producto ON escalas_precios(id_producto);
+CREATE INDEX IF NOT EXISTS idx_pedidos_usuario ON pedidos(id_usuario);
+CREATE INDEX IF NOT EXISTS idx_pedidos_distrito ON pedidos(id_distrito);
+CREATE INDEX IF NOT EXISTS idx_detalle_pedidos_pedido ON detalle_pedidos(id_pedido);
+
+INSERT INTO usuarios (nombre_completo, email, password_hash, rol)
+SELECT 'Administrador Ohana', 'admin@ohana.com', '$2b$10$rG06K3z.xCRdgYF9b5wW8.saReRVR3sgE8Rp5nW7W4pkCtJ1P9cCi', 'admin'
+WHERE NOT EXISTS (
+    SELECT 1 FROM usuarios WHERE email = 'admin@ohana.com'
+);
+
+INSERT INTO usuarios (nombre_completo, email, password_hash, rol)
+SELECT 'Juan Cliente', 'cliente@correo.com', '$2b$10$Ero2BrJEwd04mmKGah9IA.P51g1ke21QPxzWVn94ylmUARyQnCgj.', 'cliente'
+WHERE NOT EXISTS (
+    SELECT 1 FROM usuarios WHERE email = 'cliente@correo.com'
+);
+
+INSERT INTO categorias (nombre)
+SELECT 'Regalos Personalizados'
+WHERE NOT EXISTS (
+    SELECT 1 FROM categorias WHERE nombre = 'Regalos Personalizados'
+);
+
+INSERT INTO distritos (nombre, costo_delivery)
+SELECT 'Cercado', 10.00
+WHERE NOT EXISTS (
+    SELECT 1 FROM distritos WHERE nombre = 'Cercado'
+);
+
+INSERT INTO productos (id_categoria, nombre, descripcion, precio_base, stock, imagen_url)
+SELECT c.id_categoria, 'Taza personalizada', 'Taza sublimada con texto o imagen personalizada.', 25.00, 50, 'https://example.com/taza-personalizada.jpg'
+FROM categorias c
+WHERE c.nombre = 'Regalos Personalizados'
+  AND NOT EXISTS (
+      SELECT 1 FROM productos WHERE nombre = 'Taza personalizada'
+  );
+
+INSERT INTO escalas_precios (id_producto, cantidad_min, precio_unitario)
+SELECT p.id_producto, v.cantidad_min, v.precio_unitario
+FROM productos p
+CROSS JOIN (
+    VALUES
+        (1, 25.00::NUMERIC(10,2)),
+        (10, 22.50::NUMERIC(10,2)),
+        (25, 20.00::NUMERIC(10,2))
+) AS v(cantidad_min, precio_unitario)
+WHERE p.nombre = 'Taza personalizada'
+  AND NOT EXISTS (
+      SELECT 1 FROM escalas_precios ep
+      WHERE ep.id_producto = p.id_producto AND ep.cantidad_min = v.cantidad_min
+  );

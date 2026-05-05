@@ -1,0 +1,215 @@
+# Ohana Moments API
+# Uso sugerido:
+# 1. Levanta la base de datos y el backend.
+# 2. Ejecuta primero los logins.
+# 3. Copia el token de la respuesta y pégalo en adminToken o clientToken.
+# 4. Ajusta los IDs si creas nuevos registros.
+
+@baseUrl = http://localhost:4000/api
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3Nzk5ODcwOCwiZXhwIjoxNzc4NjAzNTA4fQ.zZz1CLodmAkA4NrHaZYFkNeFZz6bvyzOHtGVt0zznKg
+@clientToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJjbGllbnRlIiwiaWF0IjoxNzc3OTk4NzM5LCJleHAiOjE3Nzg2MDM1Mzl9.ZbNQPu3vbRJsZPN7tKOsuvxdjZQ4ZUMos7-4hXkEhgM
+@categoryId = 1
+@districtId = 1
+@userId = 2
+@productId = 1
+@orderId = 1
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Obtener categorias
+GET {{baseUrl}}/catalog/categories
+
+### Obtener distritos
+GET {{baseUrl}}/catalog/districts
+
+### Registrar cliente
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nombre_completo": "Cliente Demo",
+  "email": "cliente.demo@example.com",
+  "password": "cliente123",
+  "telefono": "999888777",
+  "dni_ruc": "12345678"
+}
+
+### Login admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@ohana.com",
+  "password": "admin123"
+}
+
+### Login cliente seed
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "cliente@correo.com",
+  "password": "cliente123"
+}
+
+### Ver perfil autenticado como admin
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{adminToken}}
+
+### Ver perfil autenticado como cliente
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{clientToken}}
+
+### Listar usuarios (solo admin)
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### Obtener usuario por ID (solo admin)
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Crear usuario desde admin
+POST {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "nombre_completo": "Usuario Creado por Admin",
+  "email": "usuario.admin@example.com",
+  "password": "password123",
+  "rol": "cliente",
+  "telefono": "987654321",
+  "dni_ruc": "87654321"
+}
+
+### Actualizar usuario (solo admin)
+PUT {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "nombre_completo": "Usuario Actualizado",
+  "telefono": "900111222",
+  "rol": "cliente"
+}
+
+### Eliminar usuario (solo admin)
+DELETE {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Listar productos
+GET {{baseUrl}}/products
+
+### Filtrar productos por categoria
+GET {{baseUrl}}/products?id_categoria={{categoryId}}
+
+### Obtener producto por ID
+GET {{baseUrl}}/products/{{productId}}
+
+### Crear producto (solo admin)
+POST {{baseUrl}}/products
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "id_categoria": {{categoryId}},
+  "nombre": "Polo personalizado",
+  "descripcion": "Polo de algodon con estampado personalizado.",
+  "precio_base": 35.5,
+  "stock": 20,
+  "imagen_url": "https://example.com/polo.jpg",
+  "escalas_precios": [
+    {
+      "cantidad_min": 1,
+      "precio_unitario": 35.5
+    },
+    {
+      "cantidad_min": 10,
+      "precio_unitario": 32
+    }
+  ]
+}
+
+### Actualizar producto (solo admin)
+PUT {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "nombre": "Polo personalizado premium",
+  "precio_base": 39.9,
+  "stock": 25,
+  "escalas_precios": [
+    {
+      "cantidad_min": 1,
+      "precio_unitario": 39.9
+    },
+    {
+      "cantidad_min": 12,
+      "precio_unitario": 36.5
+    }
+  ]
+}
+
+### Eliminar producto (solo admin)
+### Usa un producto sin pedidos asociados.
+DELETE {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{adminToken}}
+
+### Listar pedidos como cliente
+GET {{baseUrl}}/orders
+Authorization: Bearer {{clientToken}}
+
+### Listar pedidos como admin
+GET {{baseUrl}}/orders
+Authorization: Bearer {{adminToken}}
+
+### Obtener pedido por ID
+GET {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{clientToken}}
+
+### Crear pedido como cliente
+POST {{baseUrl}}/orders
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "id_distrito": {{districtId}},
+  "direccion_envio": "Av. Universitaria 123, Lima",
+  "metodo_pago": "transferencia",
+  "detalles": [
+    {
+      "id_producto": {{productId}},
+      "cantidad": 2,
+      "texto_personalizado": "Ohana Moments",
+      "tecnica_personalizacion": "Sublimado"
+    }
+  ]
+}
+
+### Actualizar pedido como cliente
+### El cliente solo puede editar pedidos en estado Pendiente y no puede cambiar el estado.
+PUT {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "id_distrito": {{districtId}},
+  "direccion_envio": "Jr. Los Olivos 456, Lima",
+  "metodo_pago": "yape"
+}
+
+### Actualizar estado del pedido como admin
+PUT {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "estado": "Enviado"
+}
+
+### Eliminar pedido
+### Solo funciona si el pedido esta en estado Pendiente.
+DELETE {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{clientToken}}
