@@ -165,6 +165,21 @@ Authorization: Bearer {{clientToken}}
 GET {{baseUrl}}/orders
 Authorization: Bearer {{adminToken}}
 
+### Dashboard admin
+GET {{baseUrl}}/dashboard
+Authorization: Bearer {{adminToken}}
+
+### Crear checkout externo para pedido
+POST {{baseUrl}}/payments/checkout
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "id_pedido": {{orderId}},
+  "success_url": "http://localhost:5173/pedidos?payment=success",
+  "cancel_url": "http://localhost:5173/carrito?payment=cancel"
+}
+
 ### Obtener pedido por ID
 GET {{baseUrl}}/orders/{{orderId}}
 Authorization: Bearer {{clientToken}}

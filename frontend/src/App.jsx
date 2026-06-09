@@ -1,19 +1,30 @@
+import { Navigate, Route, Routes } from 'react-router-dom';
+
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Layout } from './components/Layout';
+import { RequireAdmin, RequireAuth } from './components/RouteGuards';
+import { StoreProvider } from './context/StoreContext';
+import { AdminPage } from './pages/AdminPage';
+import { AuthPage } from './pages/AuthPage';
+import { CartPage } from './pages/CartPage';
+import { CatalogPage } from './pages/CatalogPage';
+import { OrdersPage } from './pages/OrdersPage';
+
 export default function App() {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        fontFamily: 'sans-serif',
-        background: '#f8f5f2',
-        color: '#2b211d',
-      }}
-    >
-      <section style={{ textAlign: 'center', padding: '2rem' }}>
-        <h1>Ohana Moments</h1>
-        <p>Frontend base creado en React. La interfaz se desarrollará en la siguiente etapa.</p>
-      </section>
-    </main>
+    <StoreProvider>
+      <ErrorBoundary>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<CatalogPage />} />
+            <Route path="login" element={<AuthPage />} />
+            <Route path="carrito" element={<CartPage />} />
+            <Route path="pedidos" element={<RequireAuth><OrdersPage /></RequireAuth>} />
+            <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+            <Route path="*" element={<Navigate replace to="/" />} />
+          </Route>
+        </Routes>
+      </ErrorBoundary>
+    </StoreProvider>
   );
 }

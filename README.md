@@ -24,6 +24,7 @@ El backend usa:
 
 ```bash
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
 2. Inicia PostgreSQL:
@@ -85,6 +86,8 @@ El monorepo usa `pnpm-workspace.yaml` con dos paquetes:
 - `POST /api/users`
 - `GET /api/orders`
 - `POST /api/orders`
+- `GET /api/dashboard`
+- `POST /api/payments/checkout`
 - `GET /api/catalog/categories`
 - `GET /api/catalog/districts`
 
@@ -93,6 +96,34 @@ El monorepo usa `pnpm-workspace.yaml` con dos paquetes:
 - ORM: `Prisma`
 - Autenticación: `JWT` + `bcrypt`
 - Validación: `Zod`
+- Seguridad base: `Helmet`, rate limits, CORS por entorno y logs HTTP
+
+## Frontend
+
+- React + Vite
+- Variable principal: `VITE_API_URL`
+- Rutas principales: catálogo, login/registro, carrito/checkout, pedidos y panel admin
+
+## Despliegue sugerido
+
+Para una publicación gratuita o de bajo costo:
+
+1. Base de datos: crea una PostgreSQL en Neon, Supabase, Render o Railway.
+2. Backend: publica `backend/` en Render o Railway y configura:
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `JWT_EXPIRES_IN`
+   - `FRONTEND_URL`
+   - `NODE_ENV=production`
+   - `PAYMENT_PROVIDER`
+   - `PAYMENT_CHECKOUT_BASE_URL`
+3. Frontend: publica `frontend/` en Vercel o Netlify y configura:
+   - `VITE_API_URL=https://tu-backend.example.com/api`
+4. En producción, actualiza `FRONTEND_URL` del backend con el dominio final del frontend para CORS.
+5. Ejecuta `pnpm run build:frontend` antes de publicar el frontend.
+6. Para sembrar una DB cloud, usa `psql "$DATABASE_URL" -f deploy/seed-cloud.sql`.
+
+Ver más detalles en `DEPLOY.md`.
 
 ## Ejemplo de creación de pedido
 

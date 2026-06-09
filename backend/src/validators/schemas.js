@@ -122,6 +122,14 @@ const orderIdParamsSchema = z.object({
   }),
 });
 
+const createPaymentCheckoutSchema = z.object({
+  body: z.object({
+    id_pedido: positiveInt,
+    success_url: z.string().trim().url().max(255),
+    cancel_url: z.string().trim().url().max(255),
+  }),
+});
+
 const createOrderSchema = z.object({
   body: z.object({
     id_distrito: positiveInt,
@@ -154,6 +162,7 @@ module.exports = {
   createProductSchema,
   updateProductSchema,
   orderIdParamsSchema,
+  createPaymentCheckoutSchema,
   createOrderSchema,
   updateOrderSchema,
 };

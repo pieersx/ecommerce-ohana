@@ -8,6 +8,7 @@ const validate = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 const { serializeUser } = require('../utils/serializers');
+const env = require('../config/env');
 const { authLoginSchema, authRegisterSchema } = require('../validators/schemas');
 
 const router = express.Router();
@@ -25,8 +26,8 @@ const publicUserSelect = {
 function buildToken(user) {
   return jwt.sign(
     { userId: user.id_usuario, role: user.rol },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+    env.jwtSecret,
+    { expiresIn: env.jwtExpiresIn },
   );
 }
 
