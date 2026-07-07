@@ -1,32 +1,53 @@
-import { money } from '../lib/format';
+import { money, stars } from '../lib/format';
 import { Icon } from './Icon';
 
 export function ProductCard({ product, onAdd, onOpen }) {
+  const hasOffer = product.precio_oferta && Number(product.precio_oferta) < Number(product.precio_base);
+  const discount = hasOffer
+    ? Math.round((1 - Number(product.precio_oferta) / Number(product.precio_base)) * 100)
+    : 0;
+
   return (
-    <article className="group grid min-h-[430px] grid-rows-[210px_1fr_auto] overflow-hidden rounded-lg border border-ink/10 bg-panel shadow-card transition duration-200 hover:-translate-y-1 hover:shadow-soft">
-      <button className="grid place-items-center overflow-hidden bg-mist text-3xl font-black text-forest" type="button" onClick={onOpen}>
+    <article className="product-card group">
+      <button className="product-card-media" type="button" onClick={onOpen}>
         {product.imagen_url ? (
-          <img className="h-full w-full object-cover transition duration-300 group-hover:scale-105" src={product.imagen_url} alt={product.nombre} />
+          <img src={product.imagen_url} alt={product.nombre} />
         ) : (
           <span>{product.nombre.slice(0, 2).toUpperCase()}</span>
         )}
+        <div className="product-card-badges">
+          {product.etiqueta_badge ? <span>{product.etiqueta_badge}</span> : null}
+          {hasOffer ? <b>-{discount}%</b> : null}
+        </div>
       </button>
-      <div className="p-5">
-        <span className="font-sans text-xs font-semibold uppercase text-berry">{product.categoria_nombre || 'Sin categoria'}</span>
-        <h3 className="mt-2 text-xl font-bold leading-tight">{product.nombre}</h3>
-        <p className="mt-2 line-clamp-2 font-sans text-sm leading-6 text-stone">{product.descripcion || 'Producto personalizado listo para configurar.'}</p>
+      <div className="product-card-body">
+        <h3>{product.nombre}</h3>
+        <span className="product-category">{product.categoria_nombre || 'Sin categoria'}</span>
+        <p>{product.descripcion || 'Producto personalizado listo para configurar.'}</p>
+        <div className="product-rating">
+          <span className="text-gold">{stars(product.rating_promedio)}</span>
+          <span className="text-stone">{Number(product.rating_promedio || 0).toFixed(1)} · {product.total_resenas || 0} reseñas</span>
+        </div>
       </div>
-      <div className="grid gap-3 p-5 pt-0">
-        <div className="flex items-center justify-between gap-3">
-          <strong className="text-xl">{money(product.precio_base)}</strong>
+      <div className="product-card-actions">
+        <div className="product-price-row">
+          <div>
+            <strong>{money(product.precio_actual || product.precio_base)}</strong>
+            {hasOffer ? <small className="ml-2 font-sans text-sm text-stone line-through">{money(product.precio_base)}</small> : null}
+          </div>
           <small className={product.stock <= 5 ? 'font-sans text-sm font-bold text-danger' : 'font-sans text-sm text-stone'}>
-            {product.stock} en stock
+            {product.stock <= 5 ? `Solo ${product.stock}` : `${product.stock} en stock`}
           </small>
         </div>
-        <button className="btn-primary min-h-11 w-full active:scale-[0.98]" type="button" onClick={onAdd} disabled={product.stock < 1}>
-          <Icon name="cart" />
-          Agregar
-        </button>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <button className="btn-primary min-h-10 active:scale-[0.98]" type="button" onClick={onAdd} disabled={product.stock < 1}>
+            <Icon name="cart" />
+            Agregar
+          </button>
+          <button className="btn-ghost min-h-10 px-3" type="button" onClick={onOpen} aria-label={`Ver ${product.nombre}`}>
+            <Icon name="eye" />
+          </button>
+        </div>
       </div>
     </article>
   );

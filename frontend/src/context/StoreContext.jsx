@@ -52,6 +52,18 @@ export function StoreProvider({ children }) {
       product.id_producto,
       options.texto_personalizado || '',
       options.tecnica_personalizacion || '',
+      options.talla || '',
+      options.tamano || '',
+      options.color_producto || '',
+      options.cara || '',
+      options.configuracion?.figura || '',
+      options.fuente_texto || '',
+      options.tamano_texto || '',
+      options.configuracion?.color_texto || '',
+      options.configuracion?.imagen_personalizada_url || '',
+      options.configuracion?.indicaciones_adicionales || '',
+      options.posicion_x ?? '',
+      options.posicion_y ?? '',
     ].join('-');
 
     setCart((current) => {
@@ -72,6 +84,17 @@ export function StoreProvider({ children }) {
           cantidad: Math.min(product.stock || 999, quantity),
           texto_personalizado: options.texto_personalizado || '',
           tecnica_personalizacion: options.tecnica_personalizacion || '',
+          talla: options.talla || '',
+          tamano: options.tamano || '',
+          color_producto: options.color_producto || '',
+          fuente_texto: options.fuente_texto || '',
+          tamano_texto: options.tamano_texto || 28,
+          cara: options.cara || '',
+          posicion_x: options.posicion_x ?? 50,
+          posicion_y: options.posicion_y ?? 50,
+          imagen_referencia_url: options.imagen_referencia_url || product.imagen_url || '',
+          precio_personalizacion: Number(options.precio_personalizacion || 0),
+          configuracion: options.configuracion || null,
         },
       ];
     });
@@ -83,6 +106,11 @@ export function StoreProvider({ children }) {
     setCart((current) => current.map((item) => (
       item.key === key ? { ...item, ...changes } : item
     )));
+  };
+
+  const returnItemToCart = (returnedItem) => {
+    if (!returnedItem?.product) return;
+    addToCart(returnedItem.product, returnedItem);
   };
 
   const removeCartItem = (key) => {
@@ -101,6 +129,7 @@ export function StoreProvider({ children }) {
     logout,
     addToCart,
     updateCartItem,
+    returnItemToCart,
     removeCartItem,
     clearCart: () => setCart([]),
   }), [authLoading, cart, notice, token, user]);

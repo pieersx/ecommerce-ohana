@@ -1,0 +1,15 @@
+DELETE FROM producto_imagenes
+WHERE id_producto = (SELECT id_producto FROM productos WHERE nombre = 'Polo bordado premium');
+INSERT INTO producto_imagenes (id_producto, url, alt, vista, orden)
+SELECT pr.id_producto, v.url, v.alt, v.vista, v.orden
+FROM productos pr
+JOIN (VALUES
+  ('/products/polo-blanco.png', 'Polo blanco color blanco', 'Blanco', 1),
+  ('/products/polo-negro.png', 'Polo negro color negro', 'Negro', 2),
+  ('/products/polo-verde-bosque.png', 'Polo verde bosque color verde bosque', 'Verde bosque', 3),
+  ('/products/polo-bordado-ai.png', 'Polo personalizado vista frontal', 'Adelante', 4),
+  ('/products/polo-bordado-back.svg', 'Polo personalizado vista posterior', 'Atrás', 5),
+  ('/products/polo-bordado-front.svg', 'Detalle del bordado del polo', 'Detalle', 6)
+) AS v(url, alt, vista, orden) ON TRUE
+WHERE pr.nombre = 'Polo bordado premium';
+SELECT vista, url FROM producto_imagenes pi JOIN productos pr ON pr.id_producto = pi.id_producto WHERE pr.nombre = 'Polo bordado premium' ORDER BY orden;

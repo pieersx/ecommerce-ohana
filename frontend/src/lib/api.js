@@ -1,4 +1,7 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+export const API_ORIGIN = API_URL.startsWith('http')
+  ? API_URL.replace(/\/api\/?$/, '')
+  : 'http://localhost:4000';
 export const TOKEN_KEY = 'ohana_token';
 export const CART_KEY = 'ohana_cart';
 
@@ -47,4 +50,59 @@ export function getStoredValue(key, fallback) {
   } catch (_error) {
     return fallback;
   }
+}
+
+export async function uploadFile(file, token) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new ApiError(data.message || 'No se pudo subir el archivo.', response.status);
+  }
+
+  return data;
+}
+
+export async function uploadCustomerFile(file, token) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_URL}/upload/customer`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new ApiError(data.message || 'No se pudo subir el archivo.', response.status);
+  }
+
+  return data;
+}
+
+export function resolveMediaUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('blob:') || url.startsWith('data:') || /^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/uploads/')) return `${API_ORIGIN}${url}`;
+  return url;
 }

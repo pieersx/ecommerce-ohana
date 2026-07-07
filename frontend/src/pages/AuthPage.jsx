@@ -1,14 +1,26 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useStore } from '../context/StoreContext';
 import { apiRequest } from '../lib/api';
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useStore();
   const [isRegister, setIsRegister] = useState(false);
-  const [form, setForm] = useState({ nombre_completo: '', email: '', password: '', telefono: '', dni_ruc: '' });
+  const [form, setForm] = useState({
+    nombre_completo: '',
+    email: '',
+    password: '',
+    telefono: '',
+    dni_ruc: '',
+    pais_region: 'Perú',
+    direccion_calle: '',
+    poblacion: 'Lima',
+    region_provincia: 'Lima',
+    codigo_postal: '',
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +37,7 @@ export function AuthPage() {
         body: isRegister ? form : { email: form.email, password: form.password },
       });
       login(session);
-      navigate('/');
+      navigate(location.state?.from || '/');
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -38,7 +50,7 @@ export function AuthPage() {
       <section className="w-full max-w-xl rounded-lg border border-ink/10 bg-panel p-7 shadow-card">
         <span className="eyebrow">Acceso</span>
         <h1 className="text-4xl font-black">{isRegister ? 'Crear cuenta cliente' : 'Entrar a Ohana'}</h1>
-        <p className="mt-3 font-sans leading-7 text-stone">Usa el cliente seed o entra como admin para gestionar la tienda.</p>
+        <p className="mt-3 font-sans leading-7 text-stone">Para comprar necesitas una cuenta cliente. Los administradores solo gestionan la tienda.</p>
 
         <form className="mt-6 grid gap-4" onSubmit={submit}>
           {isRegister ? (
@@ -61,14 +73,19 @@ export function AuthPage() {
               <label className="field">DNI/RUC<input value={form.dni_ruc} onChange={(event) => update('dni_ruc', event.target.value)} /></label>
             </div>
           ) : null}
+          {isRegister ? (
+            <>
+              <label className="field">Direccion de calle<input value={form.direccion_calle} onChange={(event) => update('direccion_calle', event.target.value)} /></label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="field">Pais/region<input value={form.pais_region} onChange={(event) => update('pais_region', event.target.value)} /></label>
+                <label className="field">Poblacion<input value={form.poblacion} onChange={(event) => update('poblacion', event.target.value)} /></label>
+                <label className="field">Codigo postal<input value={form.codigo_postal} onChange={(event) => update('codigo_postal', event.target.value)} /></label>
+              </div>
+            </>
+          ) : null}
           {error ? <p className="form-error">{error}</p> : null}
           <button className="btn-primary min-h-12 w-full" type="submit" disabled={loading}>{loading ? 'Procesando...' : isRegister ? 'Registrarme' : 'Iniciar sesion'}</button>
         </form>
-
-        <div className="mt-5 grid gap-1 rounded-lg border border-dashed border-ink/15 p-4 font-sans text-sm text-stone">
-          <span>Admin: admin@ohana.com / admin123</span>
-          <span>Cliente: cliente@correo.com / cliente123</span>
-        </div>
 
         <button className="mt-5 font-sans font-bold text-berry" type="button" onClick={() => setIsRegister(!isRegister)}>
           {isRegister ? 'Ya tengo cuenta' : 'Crear cuenta nueva'}

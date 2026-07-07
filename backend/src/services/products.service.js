@@ -1,12 +1,18 @@
 const prisma = require('../config/prisma');
 const httpError = require('../utils/httpError');
-const { serializeProduct } = require('../utils/serializers');
+const { serializeProduct, serializeReview } = require('../utils/serializers');
 
 const productListInclude = {
   categoria: {
     select: {
       nombre: true,
     },
+  },
+  imagenes: {
+    orderBy: [
+      { orden: 'asc' },
+      { id_imagen: 'asc' },
+    ],
   },
 };
 
@@ -15,6 +21,25 @@ const productDetailInclude = {
   escalas_precios: {
     orderBy: {
       cantidad_min: 'asc',
+    },
+  },
+  opciones: {
+    orderBy: [
+      { tipo: 'asc' },
+      { orden: 'asc' },
+      { id_opcion: 'asc' },
+    ],
+  },
+  resenas: {
+    include: {
+      usuario: {
+        select: {
+          nombre_completo: true,
+        },
+      },
+    },
+    orderBy: {
+      fecha: 'desc',
     },
   },
 };
@@ -44,14 +69,36 @@ async function ensureCategoryExists(client, categoryId) {
 }
 
 async function listProducts(query = {}) {
-  const where = query.id_categoria
-    ? { id_categoria: parsePositiveInteger(query.id_categoria, 'id_categoria') }
-    : {};
+  const where = {
+    activo: true,
+    ...(query.id_categoria
+      ? { id_categoria: parsePositiveInteger(query.id_categoria, 'id_categoria') }
+      : {}),
+    ...(query.destacado === 'true' ? { destacado: true } : {}),
+    ...(query.stock === 'available' ? { stock: { gt: 0 } } : {}),
+    ...(query.q
+      ? {
+          OR: [
+            { nombre: { contains: query.q, mode: 'insensitive' } },
+            { descripcion: { contains: query.q, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+  };
+
+  const orderByMap = {
+    precio_asc: [{ precio_oferta: 'asc' }, { precio_base: 'asc' }],
+    precio_desc: [{ precio_oferta: 'desc' }, { precio_base: 'desc' }],
+    vendidos: [{ ventas_totales: 'desc' }, { rating_promedio: 'desc' }],
+    rating: [{ rating_promedio: 'desc' }, { total_resenas: 'desc' }],
+    nuevos: [{ id_producto: 'desc' }],
+    recomendados: [{ destacado: 'desc' }, { ventas_totales: 'desc' }, { rating_promedio: 'desc' }],
+  };
 
   const products = await prisma.producto.findMany({
     where,
     include: productListInclude,
-    orderBy: { id_producto: 'desc' },
+    orderBy: orderByMap[query.sort] || orderByMap.recomendados,
   });
 
   return products.map(serializeProduct);
@@ -80,10 +127,20 @@ async function createProduct(body) {
         nombre: body.nombre,
         descripcion: body.descripcion ?? null,
         precio_base: body.precio_base,
+        precio_oferta: body.precio_oferta ?? null,
         stock: body.stock,
         imagen_url: body.imagen_url ?? null,
+        activo: body.activo ?? true,
+        destacado: body.destacado ?? false,
+        etiqueta_badge: body.etiqueta_badge ?? null,
         escalas_precios: body.escalas_precios.length
           ? { create: body.escalas_precios }
+          : undefined,
+        imagenes: body.imagenes?.length
+          ? { create: body.imagenes }
+          : undefined,
+        opciones: body.opciones?.length
+          ? { create: body.opciones }
           : undefined,
       },
       include: productDetailInclude,
@@ -120,12 +177,28 @@ async function updateProduct(productId, body) {
         nombre: hasOwn(body, 'nombre') ? body.nombre : currentProduct.nombre,
         descripcion: hasOwn(body, 'descripcion') ? body.descripcion : currentProduct.descripcion,
         precio_base: hasOwn(body, 'precio_base') ? body.precio_base : currentProduct.precio_base,
+        precio_oferta: hasOwn(body, 'precio_oferta') ? body.precio_oferta : currentProduct.precio_oferta,
         stock: hasOwn(body, 'stock') ? body.stock : currentProduct.stock,
         imagen_url: hasOwn(body, 'imagen_url') ? body.imagen_url : currentProduct.imagen_url,
+        activo: hasOwn(body, 'activo') ? body.activo : currentProduct.activo,
+        destacado: hasOwn(body, 'destacado') ? body.destacado : currentProduct.destacado,
+        etiqueta_badge: hasOwn(body, 'etiqueta_badge') ? body.etiqueta_badge : currentProduct.etiqueta_badge,
         escalas_precios: hasOwn(body, 'escalas_precios')
           ? {
               deleteMany: {},
               create: body.escalas_precios,
+            }
+          : undefined,
+        imagenes: hasOwn(body, 'imagenes')
+          ? {
+              deleteMany: {},
+              create: body.imagenes,
+            }
+          : undefined,
+        opciones: hasOwn(body, 'opciones')
+          ? {
+              deleteMany: {},
+              create: body.opciones,
             }
           : undefined,
       },
@@ -154,10 +227,111 @@ async function deleteProduct(productId) {
   }
 }
 
+async function listProductReviews(productId) {
+  const parsedProductId = parsePositiveInteger(productId, 'id');
+
+  const reviews = await prisma.resenaProducto.findMany({
+    where: { id_producto: parsedProductId },
+    include: {
+      usuario: {
+        select: {
+          nombre_completo: true,
+        },
+      },
+    },
+    orderBy: { fecha: 'desc' },
+  });
+
+  return reviews.map(serializeReview);
+}
+
+async function refreshProductRating(client, productId) {
+  const rating = await client.resenaProducto.aggregate({
+    where: { id_producto: productId },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
+  await client.producto.update({
+    where: { id_producto: productId },
+    data: {
+      rating_promedio: Number((rating._avg.rating || 0).toFixed(2)),
+      total_resenas: rating._count.rating,
+    },
+  });
+}
+
+async function createProductReview(productId, body, user) {
+  if (user.rol !== 'cliente') {
+    throw httpError(403, 'Solo los clientes pueden escribir reseñas.');
+  }
+
+  const parsedProductId = parsePositiveInteger(productId, 'id');
+
+  const purchasedLine = await prisma.detallePedido.findFirst({
+    where: {
+      id_producto: parsedProductId,
+      pedido: {
+        id_usuario: user.id_usuario,
+      },
+    },
+    include: {
+      pedido: true,
+    },
+    orderBy: {
+      id_detalle: 'desc',
+    },
+  });
+
+  if (!purchasedLine) {
+    throw httpError(403, 'Solo puedes reseñar productos previamente comprados.');
+  }
+
+  const review = await prisma.$transaction(async (tx) => {
+    const createdReview = await tx.resenaProducto.upsert({
+      where: {
+        id_producto_id_usuario: {
+          id_producto: parsedProductId,
+          id_usuario: user.id_usuario,
+        },
+      },
+      create: {
+        id_producto: parsedProductId,
+        id_usuario: user.id_usuario,
+        id_pedido: purchasedLine.id_pedido,
+        rating: body.rating,
+        comentario: body.comentario,
+        compra_verificada: true,
+      },
+      update: {
+        id_pedido: purchasedLine.id_pedido,
+        rating: body.rating,
+        comentario: body.comentario,
+        compra_verificada: true,
+        fecha: new Date(),
+      },
+      include: {
+        usuario: {
+          select: {
+            nombre_completo: true,
+          },
+        },
+      },
+    });
+
+    await refreshProductRating(tx, parsedProductId);
+    return createdReview;
+  });
+
+  return serializeReview(review);
+}
+
 module.exports = {
+  createProductReview,
   createProduct,
   deleteProduct,
   getProduct,
+  listProductReviews,
   listProducts,
   updateProduct,
 };

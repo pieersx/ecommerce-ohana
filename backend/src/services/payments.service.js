@@ -8,10 +8,6 @@ async function createExternalCheckout({
   successUrl,
   cancelUrl,
 }) {
-  if (!env.paymentCheckoutBaseUrl) {
-    throw httpError(503, 'El checkout externo no está configurado.');
-  }
-
   const order = await prisma.pedido.findUnique({
     where: { id_pedido: orderId },
     select: {
@@ -19,6 +15,7 @@ async function createExternalCheckout({
       id_usuario: true,
       estado: true,
       monto_total: true,
+      metodo_pago: true,
     },
   });
 
@@ -32,6 +29,39 @@ async function createExternalCheckout({
 
   if (order.estado !== 'Pendiente') {
     throw httpError(409, 'Solo se pueden pagar pedidos pendientes.');
+  }
+
+  const shouldSimulateCheckout = !env.paymentCheckoutBaseUrl
+    || ['external', 'simulado', 'simulated'].includes(String(env.paymentProvider).toLowerCase());
+
+  if (shouldSimulateCheckout) {
+    await prisma.$transaction([
+      prisma.pedido.update({
+        where: { id_pedido: order.id_pedido },
+        data: {
+          estado: 'Pagado',
+          fecha_actualizacion: new Date(),
+        },
+      }),
+      prisma.mensajePedido.create({
+        data: {
+          id_pedido: order.id_pedido,
+          id_usuario: order.id_usuario,
+          tipo: 'Pagado',
+          contenido: `Pago simulado recibido por ${order.metodo_pago || env.paymentProvider}. Tu pedido entro a produccion y tu boleta ya esta disponible en Mis pedidos.`,
+          visible_cliente: true,
+        },
+      }),
+    ]);
+
+    return {
+      provider: 'simulado',
+      checkout_url: successUrl,
+      order_id: order.id_pedido,
+      currency: 'PEN',
+      amount: Number(order.monto_total),
+      simulated: true,
+    };
   }
 
   const checkoutUrl = new URL(env.paymentCheckoutBaseUrl);

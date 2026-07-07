@@ -8,6 +8,8 @@ import { AdminPage } from './pages/AdminPage';
 import { AuthPage } from './pages/AuthPage';
 import { CartPage } from './pages/CartPage';
 import { CatalogPage } from './pages/CatalogPage';
+import { EmpresaPage } from './pages/EmpresaPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { OrdersPage } from './pages/OrdersPage';
 
 export default function App() {
@@ -20,7 +22,9 @@ export default function App() {
             <Route path="login" element={<AuthPage />} />
             <Route path="carrito" element={<CartPage />} />
             <Route path="pedidos" element={<RequireAuth><OrdersPage /></RequireAuth>} />
+            <Route path="mensajes" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+            <Route path="empresa" element={<EmpresaPage />} />
             <Route path="*" element={<Navigate replace to="/" />} />
           </Route>
         </Routes>

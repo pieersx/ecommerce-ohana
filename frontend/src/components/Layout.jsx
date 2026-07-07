@@ -26,6 +26,7 @@ export function Layout() {
     { to: '/', label: 'Catalogo', icon: 'shop' },
     { to: '/carrito', label: 'Carrito', icon: 'cart', badge: cartCount },
     { to: '/pedidos', label: 'Pedidos', icon: 'orders', auth: true },
+    { to: '/mensajes', label: 'Mensajes', icon: 'messages', auth: true },
     { to: '/admin', label: 'Admin', icon: 'admin', admin: true },
   ];
 
@@ -35,18 +36,15 @@ export function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-ivory text-ink">
-      <header className="sticky top-0 z-40 border-b border-ink/10 bg-ivory/90 px-4 py-3 backdrop-blur-xl lg:px-12">
+    <div className="app-shell bg-ivory text-ink">
+      <header className="site-header">
         <div className="mx-auto grid max-w-7xl gap-3 lg:grid-cols-[auto_1fr_auto] lg:items-center">
           <button className="flex items-center gap-3 text-left" type="button" onClick={() => navigate('/')}>
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-forest text-lg font-black text-ivory">O</span>
-            <span>
-              <strong className="block text-lg leading-none">Ohana Moments</strong>
-              <small className="font-sans text-xs text-stone">Regalos personalizados en Lima</small>
-            </span>
+            <img className="brand-logo" src="/brand/ohana-reference-logo.png" alt="Ohana Moments" />
           </button>
 
-          <nav className="grid grid-cols-2 gap-2 sm:flex sm:justify-center">
+          <div className="grid gap-2">
+            <nav className="hidden gap-2 sm:flex sm:justify-center">
             {navItems.map((item) => {
               if (item.auth && !user) return null;
               if (item.admin && user?.rol !== 'admin') return null;
@@ -54,8 +52,8 @@ export function Layout() {
               return (
                 <NavLink
                   className={({ isActive }) => [
-                    'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 py-2 font-sans text-sm font-semibold transition hover:-translate-y-0.5 hover:bg-forest/10',
-                    isActive ? 'bg-forest text-ivory' : 'text-ink',
+                    'nav-link',
+                    isActive ? 'nav-link-active' : '',
                   ].join(' ')}
                   key={item.to}
                   to={item.to}
@@ -68,7 +66,8 @@ export function Layout() {
                 </NavLink>
               );
             })}
-          </nav>
+            </nav>
+          </div>
 
           <div className="flex items-center justify-start gap-2 font-sans text-sm text-stone lg:justify-end">
             {user ? (
@@ -80,19 +79,57 @@ export function Layout() {
                 </button>
               </>
             ) : (
-              <button className="btn-primary min-h-10 px-4" type="button" onClick={() => navigate('/login')}>
+              <button className="btn-primary header-login min-h-10 px-4" type="button" onClick={() => navigate('/login')}>
                 Entrar
+                <Icon name="user" />
               </button>
             )}
           </div>
         </div>
       </header>
 
-      {authLoading ? (
-        <div className="grid min-h-[60vh] place-items-center font-sans text-stone">Restaurando sesion...</div>
-      ) : (
-        <Outlet />
-      )}
+      <div className="app-main">
+        {authLoading ? (
+          <div className="grid min-h-[60vh] place-items-center font-sans text-stone">Restaurando sesion...</div>
+        ) : (
+          <Outlet />
+        )}
+      </div>
+      <footer className="site-footer">
+        <div>
+          <img className="footer-logo" src="/brand/ohana-reference-logo.png" alt="Ohana Moments" />
+          <p>Regalos personalizados hechos en Lima con entrega por distrito y atención cercana.</p>
+          <a className="mt-2 inline-block text-sm font-semibold text-forest underline" href="/empresa">Conoce mas sobre nosotros</a>
+        </div>
+        <div>
+          <strong>Compra segura</strong>
+          <span>Yape, transferencia y efectivo</span>
+          <span>Checkout externo configurable</span>
+        </div>
+        <div>
+          <strong>Soporte</strong>
+          <span><a className="text-forest underline" href="https://wa.me/51913912694" target="_blank" rel="noopener noreferrer">WhatsApp: +51 913 912 694</a></span>
+          <span>hola@ohanamoments.pe</span>
+        </div>
+        <div>
+          <strong>Delivery</strong>
+          <span>Lima Metropolitana</span>
+          <span>Envios a provincia aun no habilitados</span>
+        </div>
+      </footer>
+      <nav className="mobile-tabbar">
+        {navItems.filter((item) => {
+          if (item.auth && !user) return false;
+          if (item.admin && user?.rol !== 'admin') return false;
+          return true;
+        }).slice(0, 5).map((item) => (
+          <NavLink className="mobile-tab" key={item.to} to={item.to}>
+            <Icon name={item.icon} />
+            <span>{item.label}</span>
+            {item.badge ? <b>{item.badge}</b> : null}
+          </NavLink>
+        ))}
+      </nav>
       <Notice />
     </div>
   );

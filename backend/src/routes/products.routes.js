@@ -3,15 +3,18 @@ const express = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const {
+  createProductReview,
   createProduct,
   deleteProduct,
   getProduct,
+  listProductReviews,
   listProducts,
   updateProduct,
 } = require('../services/products.service');
 const asyncHandler = require('../utils/asyncHandler');
 const {
   createProductSchema,
+  createReviewSchema,
   listProductsSchema,
   productIdParamsSchema,
   updateProductSchema,
@@ -25,6 +28,14 @@ router.get('/', validate(listProductsSchema), asyncHandler(async (req, res) => {
 
 router.get('/:id', validate(productIdParamsSchema), asyncHandler(async (req, res) => {
   res.json(await getProduct(req.params.id));
+}));
+
+router.get('/:id/reviews', validate(productIdParamsSchema), asyncHandler(async (req, res) => {
+  res.json(await listProductReviews(req.params.id));
+}));
+
+router.post('/:id/reviews', authenticate, validate(createReviewSchema), asyncHandler(async (req, res) => {
+  res.status(201).json(await createProductReview(req.params.id, req.body, req.user));
 }));
 
 router.post('/', authenticate, requireRole('admin'), validate(createProductSchema), asyncHandler(async (req, res) => {

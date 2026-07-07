@@ -20,6 +20,11 @@ const publicUserSelect = {
   rol: true,
   telefono: true,
   dni_ruc: true,
+  pais_region: true,
+  direccion_calle: true,
+  poblacion: true,
+  region_provincia: true,
+  codigo_postal: true,
   fecha_registro: true,
 };
 
@@ -38,6 +43,11 @@ router.post('/register', validate(authRegisterSchema), asyncHandler(async (req, 
     password,
     telefono,
     dni_ruc,
+    pais_region,
+    direccion_calle,
+    poblacion,
+    region_provincia,
+    codigo_postal,
   } = req.body;
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -53,6 +63,11 @@ router.post('/register', validate(authRegisterSchema), asyncHandler(async (req, 
         rol: 'cliente',
         telefono: telefono ?? null,
         dni_ruc: dni_ruc ?? null,
+        pais_region: pais_region ?? 'Perú',
+        direccion_calle: direccion_calle ?? null,
+        poblacion: poblacion ?? null,
+        region_provincia: region_provincia ?? 'Lima',
+        codigo_postal: codigo_postal ?? null,
       },
       select: publicUserSelect,
     });

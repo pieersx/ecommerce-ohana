@@ -47,6 +47,10 @@ async function getUser(userId) {
 }
 
 async function createUser(body) {
+  if (body.rol !== 'admin') {
+    throw httpError(400, 'Desde admin solo se pueden crear nuevos administradores. Los clientes deben registrarse por sí mismos.');
+  }
+
   const passwordHash = await bcrypt.hash(body.password, 10);
 
   try {
@@ -58,6 +62,11 @@ async function createUser(body) {
         rol: normalizeRole(body.rol),
         telefono: body.telefono ?? null,
         dni_ruc: body.dni_ruc ?? null,
+        pais_region: body.pais_region ?? 'Perú',
+        direccion_calle: body.direccion_calle ?? null,
+        poblacion: body.poblacion ?? null,
+        region_provincia: body.region_provincia ?? 'Lima',
+        codigo_postal: body.codigo_postal ?? null,
       },
     });
 
@@ -95,6 +104,11 @@ async function updateUser(userId, body) {
         rol: hasOwn(body, 'rol') ? normalizeRole(body.rol) : currentUser.rol,
         telefono: hasOwn(body, 'telefono') ? body.telefono : currentUser.telefono,
         dni_ruc: hasOwn(body, 'dni_ruc') ? body.dni_ruc : currentUser.dni_ruc,
+        pais_region: hasOwn(body, 'pais_region') ? body.pais_region : currentUser.pais_region,
+        direccion_calle: hasOwn(body, 'direccion_calle') ? body.direccion_calle : currentUser.direccion_calle,
+        poblacion: hasOwn(body, 'poblacion') ? body.poblacion : currentUser.poblacion,
+        region_provincia: hasOwn(body, 'region_provincia') ? body.region_provincia : currentUser.region_provincia,
+        codigo_postal: hasOwn(body, 'codigo_postal') ? body.codigo_postal : currentUser.codigo_postal,
       },
     });
 
