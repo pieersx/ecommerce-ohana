@@ -4,6 +4,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { RequireAdmin, RequireAuth } from './components/RouteGuards';
 import { StoreProvider } from './context/StoreContext';
+import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { AuthPage } from './pages/AuthPage';
 import { CartPage } from './pages/CartPage';
@@ -21,6 +22,7 @@ export default function App() {
             <Route index element={<CatalogPage />} />
             <Route path="login" element={<AuthPage />} />
             <Route path="carrito" element={<CartPage />} />
+            <Route path="cuenta" element={<RequireAuth><AccountPage /></RequireAuth>} />
             <Route path="pedidos" element={<RequireAuth><OrdersPage /></RequireAuth>} />
             <Route path="mensajes" element={<RequireAuth><MessagesPage /></RequireAuth>} />
             <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />

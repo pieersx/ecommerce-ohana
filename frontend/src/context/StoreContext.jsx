@@ -46,6 +46,8 @@ export function StoreProvider({ children }) {
     setUser(null);
   };
 
+  const updateUser = (nextUser) => setUser(nextUser);
+
   const addToCart = (product, options = {}) => {
     const quantity = Number(options.cantidad || 1);
     const key = [
@@ -127,6 +129,7 @@ export function StoreProvider({ children }) {
     setNotice,
     login,
     logout,
+    updateUser,
     addToCart,
     updateCartItem,
     returnItemToCart,

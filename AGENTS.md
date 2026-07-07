@@ -1,9 +1,9 @@
 # AGENTS.md
 
 ## Workspace
-- Usa `pnpm` en la raiz. Este repo no usa `npm`, `turbo`, lint, tests ni typecheck.
-- Paquetes del monorepo: `backend/` y `frontend/`.
-- `frontend/` es solo un placeholder de Vite + React; no asumas una app frontend desarrollada todavia.
+- Usa `pnpm` en la raiz. Este repo no usa `npm`, `turbo`, lint ni typecheck.
+- Paquetes del monorepo: `backend/`, `frontend/` y `e2e/`.
+- `frontend/` es la tienda completa en Vite + React (catalogo, carrito, pedidos, cuenta, admin).
 
 ## Comandos reales
 - Setup inicial: `cp backend/.env.example backend/.env`
@@ -29,8 +29,16 @@
 - Si cambias el esquema, manten sincronizados `backend/prisma/schema.prisma` y `docker/postgres/init/01-schema.sql`.
 - Despues de cambios de schema o seeds, usa `pnpm run db:reset`.
 
+## Tests
+- Integracion backend: `pnpm run test:backend` (node:test + supertest; recrea la base `ohana_moments_test` desde el schema SQL; requiere `pnpm run db:up`).
+- E2E: `pnpm run test:e2e` (Playwright; levanta backend en :4100 y frontend en :5273 contra la base `ohana_moments_e2e`).
+- `NODE_ENV=test` desactiva los rate limiters.
+
+## Deploy
+- Produccion en AWS (App Runner + RDS + S3). Redeploy: `bash deploy/aws-deploy.sh`.
+- Credenciales de produccion en `deploy/.env.production` (gitignored). Ver `DEPLOY.md`.
+
 ## Verificacion manual
-- No hay tests automaticos hoy; no inventes comandos de test o lint.
 - Para backend, usa `GET /api/health` y los requests de `api.http`.
 - Los tokens pegados en `api.http` se vuelven obsoletos; vuelve a hacer login y reemplazalos antes de probar rutas protegidas.
 

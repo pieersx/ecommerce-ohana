@@ -8,13 +8,22 @@ const passwordSchema = z.string().min(6).max(100);
 const roleSchema = z.enum(['admin', 'cliente']);
 const orderStatusSchema = z.enum(['Pendiente', 'Pagado', 'Enviado', 'Entregado']);
 
-const optionalShortText = (maxLength) => z.string().trim().min(1).max(maxLength).nullable().optional();
-const optionalLongText = z.string().trim().min(1).nullable().optional();
+// Los formularios envían "" en los campos opcionales vacíos: se normaliza a null.
+const emptyToNull = (value) => (typeof value === 'string' && value.trim() === '' ? null : value);
+
+const optionalShortText = (maxLength) => z.preprocess(
+  emptyToNull,
+  z.string().trim().min(1).max(maxLength).nullable().optional(),
+);
+const optionalLongText = z.preprocess(
+  emptyToNull,
+  z.string().trim().min(1).nullable().optional(),
+);
 const assetUrlSchema = (maxLength = 500) => z.string().trim().max(maxLength).refine(
   (value) => /^https?:\/\//i.test(value) || value.startsWith('/products/') || value.startsWith('/brand/') || value.startsWith('/uploads/'),
   { message: 'Debe ser una URL http(s) o una ruta local de assets.' },
 );
-const optionalUrl = assetUrlSchema(255).nullable().optional();
+const optionalUrl = z.preprocess(emptyToNull, assetUrlSchema(255).nullable().optional());
 
 const atLeastOneField = (schema) => schema.refine(
   (value) => Object.keys(value).length > 0,
@@ -84,6 +93,26 @@ const authLoginSchema = z.object({
 const userIdParamsSchema = z.object({
   params: z.object({
     id: positiveInt,
+  }),
+});
+
+const updateProfileSchema = z.object({
+  body: atLeastOneField(z.object({
+    nombre_completo: z.string().trim().min(1).max(150).optional(),
+    telefono: optionalShortText(20),
+    dni_ruc: optionalShortText(20),
+    pais_region: optionalShortText(80),
+    direccion_calle: optionalLongText,
+    poblacion: optionalShortText(120),
+    region_provincia: optionalShortText(120),
+    codigo_postal: optionalShortText(20),
+  })),
+});
+
+const changePasswordSchema = z.object({
+  body: z.object({
+    password_actual: z.string().min(1),
+    password_nueva: passwordSchema,
   }),
 });
 
@@ -250,6 +279,8 @@ const createReviewSchema = z.object({
 module.exports = {
   authRegisterSchema,
   authLoginSchema,
+  changePasswordSchema,
+  updateProfileSchema,
   userIdParamsSchema,
   createUserSchema,
   updateUserSchema,

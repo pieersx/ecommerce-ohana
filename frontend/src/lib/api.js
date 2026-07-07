@@ -1,7 +1,8 @@
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+// Con VITE_API_URL relativo (ej. "/api") el backend sirve el frontend: mismo origen.
 export const API_ORIGIN = API_URL.startsWith('http')
   ? API_URL.replace(/\/api\/?$/, '')
-  : 'http://localhost:4000';
+  : '';
 export const TOKEN_KEY = 'ohana_token';
 export const CART_KEY = 'ohana_cart';
 

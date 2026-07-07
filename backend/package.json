@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "test": "node tests/setup-db.js && NODE_ENV=test DATABASE_URL=postgresql://ohana_user:ohana_password@localhost:5432/ohana_moments_test JWT_SECRET=ohana_test_secret node --test --test-concurrency=1 tests/auth.test.js tests/catalog.test.js tests/products-admin.test.js tests/orders.test.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1080.0",
     "@prisma/client": "6.14.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -23,6 +25,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.9",
-    "prisma": "6.14.0"
+    "pg": "^8.22.0",
+    "prisma": "6.14.0",
+    "supertest": "^7.2.2"
   }
 }

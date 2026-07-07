@@ -10,3 +10,6 @@ pnpm-debug.log*
 skills-lock.json
 backend/uploads/*
 !backend/uploads/.gitkeep
+deploy/.env.production
+e2e/test-results/
+e2e/playwright-report/

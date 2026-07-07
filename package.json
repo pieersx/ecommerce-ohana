@@ -10,6 +10,8 @@
     "dev:backend": "pnpm --filter ohana-backend dev",
     "start:backend": "pnpm --filter ohana-backend start",
     "dev:frontend": "pnpm --filter ohana-frontend dev",
-    "build:frontend": "pnpm --filter ohana-frontend build"
+    "build:frontend": "pnpm --filter ohana-frontend build",
+    "test:backend": "pnpm --filter ohana-backend test",
+    "test:e2e": "pnpm --filter ohana-e2e test"
   }
 }

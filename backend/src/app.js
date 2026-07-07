@@ -21,11 +21,21 @@ const asyncHandler = require('./utils/asyncHandler')
 
 const app = express()
 
-const corsOrigin = env.frontendOrigins.length ? env.frontendOrigins : true
+// Con SERVE_FRONTEND el frontend es mismo origen: no hace falta abrir CORS.
+const corsOrigin = env.frontendOrigins.length
+  ? env.frontendOrigins
+  : (env.serveFrontend ? false : true)
 
 app.set('trust proxy', 1)
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      // Imagenes de productos: S3 (uploads), URLs externas https y previews blob:.
+      'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+    },
+  },
 }))
 app.use(cors({ origin: corsOrigin }))
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'))
@@ -55,6 +65,17 @@ app.use('/api/users', usersRoutes)
 app.use('/api/orders', ordersRoutes)
 app.use('/api/payments', paymentsRoutes)
 app.use('/api/upload', uploadRoutes)
+
+const frontendDist = process.env.FRONTEND_DIST_DIR
+  ? path.resolve(process.env.FRONTEND_DIST_DIR)
+  : path.join(__dirname, '..', '..', 'frontend', 'dist')
+
+if (env.serveFrontend) {
+  app.use(express.static(frontendDist))
+  app.get(/^\/(?!api\/|uploads\/).*/, (_req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'))
+  })
+}
 
 app.use(notFound)
 app.use(errorHandler)

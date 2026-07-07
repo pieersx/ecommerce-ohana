@@ -72,7 +72,9 @@ export function Layout() {
           <div className="flex items-center justify-start gap-2 font-sans text-sm text-stone lg:justify-end">
             {user ? (
               <>
-                <span className="max-w-48 truncate">{user.nombre_completo}</span>
+                <button className="max-w-48 truncate font-semibold text-forest underline" type="button" onClick={() => navigate('/cuenta')}>
+                  {user.nombre_completo}
+                </button>
                 <button className="btn-ghost" type="button" onClick={handleLogout}>
                   <Icon name="logout" />
                   Salir

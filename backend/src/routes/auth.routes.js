@@ -9,7 +9,12 @@ const asyncHandler = require('../utils/asyncHandler');
 const httpError = require('../utils/httpError');
 const { serializeUser } = require('../utils/serializers');
 const env = require('../config/env');
-const { authLoginSchema, authRegisterSchema } = require('../validators/schemas');
+const {
+  authLoginSchema,
+  authRegisterSchema,
+  changePasswordSchema,
+  updateProfileSchema,
+} = require('../validators/schemas');
 
 const router = express.Router();
 
@@ -110,6 +115,56 @@ router.post('/login', validate(authLoginSchema), asyncHandler(async (req, res) =
 
 router.get('/me', authenticate, asyncHandler(async (req, res) => {
   res.json({ usuario: serializeUser(req.user) });
+}));
+
+const PROFILE_FIELDS = [
+  'nombre_completo',
+  'telefono',
+  'dni_ruc',
+  'pais_region',
+  'direccion_calle',
+  'poblacion',
+  'region_provincia',
+  'codigo_postal',
+];
+
+router.put('/me', authenticate, validate(updateProfileSchema), asyncHandler(async (req, res) => {
+  const data = {};
+
+  for (const field of PROFILE_FIELDS) {
+    if (req.body[field] !== undefined) {
+      data[field] = req.body[field];
+    }
+  }
+
+  const user = await prisma.usuario.update({
+    where: { id_usuario: req.user.id_usuario },
+    data,
+    select: publicUserSelect,
+  });
+
+  res.json({ usuario: serializeUser(user) });
+}));
+
+router.put('/me/password', authenticate, validate(changePasswordSchema), asyncHandler(async (req, res) => {
+  const { password_actual, password_nueva } = req.body;
+
+  const user = await prisma.usuario.findUnique({
+    where: { id_usuario: req.user.id_usuario },
+  });
+
+  const isPasswordValid = await bcrypt.compare(password_actual, user.password_hash);
+
+  if (!isPasswordValid) {
+    throw httpError(401, 'La contraseña actual no es correcta.');
+  }
+
+  await prisma.usuario.update({
+    where: { id_usuario: req.user.id_usuario },
+    data: { password_hash: await bcrypt.hash(password_nueva, 10) },
+  });
+
+  res.json({ message: 'Contraseña actualizada correctamente.' });
 }));
 
 module.exports = router;

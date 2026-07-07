@@ -18,7 +18,9 @@ function loadEnv() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const frontendOrigins = parseOrigins(process.env.FRONTEND_URL);
 
-  if (nodeEnv === 'production' && !frontendOrigins.length) {
+  const serveFrontend = process.env.SERVE_FRONTEND === 'true';
+
+  if (nodeEnv === 'production' && !frontendOrigins.length && !serveFrontend) {
     throw new Error('FRONTEND_URL es obligatorio en producción para configurar CORS.');
   }
 
@@ -31,6 +33,9 @@ function loadEnv() {
     frontendOrigins,
     paymentProvider: process.env.PAYMENT_PROVIDER || 'external',
     paymentCheckoutBaseUrl: process.env.PAYMENT_CHECKOUT_BASE_URL || '',
+    serveFrontend,
+    uploadsBucket: process.env.S3_UPLOADS_BUCKET || '',
+    awsRegion: process.env.AWS_REGION || 'us-east-1',
   };
 }
 

@@ -65,10 +65,20 @@ pnpm run dev:frontend
 
 ## Workspace
 
-El monorepo usa `pnpm-workspace.yaml` con dos paquetes:
+El monorepo usa `pnpm-workspace.yaml` con tres paquetes:
 
 - `backend`
 - `frontend`
+- `e2e`
+
+## Tests
+
+```bash
+pnpm run test:backend   # integracion API (node:test + supertest, base ohana_moments_test)
+pnpm run test:e2e       # Playwright (levanta backend :4100 y frontend :5273, base ohana_moments_e2e)
+```
+
+Ambos requieren PostgreSQL local corriendo (`pnpm run db:up`).
 
 ## Credenciales iniciales
 
@@ -104,41 +114,13 @@ El monorepo usa `pnpm-workspace.yaml` con dos paquetes:
 - Variable principal: `VITE_API_URL`
 - Rutas principales: catálogo, login/registro, carrito/checkout, pedidos y panel admin
 
-## Despliegue sugerido
+## Despliegue en produccion (AWS)
 
-Para una publicación gratuita o de bajo costo:
+La app esta desplegada en AWS (App Runner + RDS PostgreSQL + S3 + ECR).
+Ver `DEPLOY.md` para la arquitectura y `deploy/.env.production` (gitignored) para credenciales.
 
-1. Base de datos: crea una PostgreSQL en Neon, Supabase, Render o Railway.
-2. Backend: publica `backend/` en Render o Railway y configura:
-   - `DATABASE_URL`
-   - `JWT_SECRET`
-   - `JWT_EXPIRES_IN`
-   - `FRONTEND_URL`
-   - `NODE_ENV=production`
-   - `PAYMENT_PROVIDER`
-   - `PAYMENT_CHECKOUT_BASE_URL`
-3. Frontend: publica `frontend/` en Vercel o Netlify y configura:
-   - `VITE_API_URL=https://tu-backend.example.com/api`
-4. En producción, actualiza `FRONTEND_URL` del backend con el dominio final del frontend para CORS.
-5. Ejecuta `pnpm run build:frontend` antes de publicar el frontend.
-6. Para sembrar una DB cloud, usa `psql "$DATABASE_URL" -f deploy/seed-cloud.sql`.
+Redeploy tras cambios de codigo:
 
-Ver más detalles en `DEPLOY.md`.
-
-## Ejemplo de creación de pedido
-
-```json
-{
-  "id_distrito": 1,
-  "direccion_envio": "Av. Universitaria 123, Lima",
-  "metodo_pago": "transferencia",
-  "detalles": [
-    {
-      "id_producto": 1,
-      "cantidad": 2,
-      "texto_personalizado": "Ohana",
-      "tecnica_personalizacion": "Sublimado"
-    }
-  ]
-}
+```bash
+bash deploy/aws-deploy.sh
 ```

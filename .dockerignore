@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+.git
+.agents
+lab5-mlns
+docker
+deploy
+scripts
+e2e/test-results
+e2e/playwright-report
+frontend/dist
+backend/uploads
+backend/.env
+frontend/.env
+*.md
+api.http

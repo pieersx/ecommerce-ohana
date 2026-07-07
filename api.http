@@ -6,8 +6,8 @@
 # 4. Ajusta los IDs si creas nuevos registros.
 
 @baseUrl = http://localhost:4000/api
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3Nzk5ODcwOCwiZXhwIjoxNzc4NjAzNTA4fQ.zZz1CLodmAkA4NrHaZYFkNeFZz6bvyzOHtGVt0zznKg
-@clientToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsInJvbGUiOiJjbGllbnRlIiwiaWF0IjoxNzc3OTk4NzM5LCJleHAiOjE3Nzg2MDM1Mzl9.ZbNQPu3vbRJsZPN7tKOsuvxdjZQ4ZUMos7-4hXkEhgM
+@adminToken = PEGA_AQUI_EL_TOKEN_DE_ADMIN
+@clientToken = PEGA_AQUI_EL_TOKEN_DE_CLIENTE
 @categoryId = 1
 @districtId = 1
 @userId = 2
@@ -228,3 +228,23 @@ Content-Type: application/json
 ### Solo funciona si el pedido esta en estado Pendiente.
 DELETE {{baseUrl}}/orders/{{orderId}}
 Authorization: Bearer {{clientToken}}
+
+### Actualizar mi perfil (cliente o admin autenticado)
+PUT {{baseUrl}}/auth/me
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "telefono": "987654321",
+  "direccion_calle": "Av. Arequipa 1234"
+}
+
+### Cambiar mi contraseña
+PUT {{baseUrl}}/auth/me/password
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "password_actual": "cliente123",
+  "password_nueva": "nuevaClave123"
+}

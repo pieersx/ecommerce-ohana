@@ -1,66 +1,72 @@
-# Deploy Ohana Moments
+# Deploy Ohana Moments (AWS)
 
-## Recommended Topology
+## Arquitectura en producción
 
-- Frontend: Vercel or Netlify.
-- Backend: Render, Railway, or Fly.io.
-- Database: Neon, Supabase, Render PostgreSQL, or Railway PostgreSQL.
+- **App Runner** (`ohana-app`, us-east-1): un solo servicio con la imagen Docker de ECR.
+  El backend Express sirve la API en `/api` y el frontend compilado (SPA) en `/`.
+  HTTPS incluido: https://xkrncjbapq.us-east-1.awsapprunner.com
+- **RDS PostgreSQL 16** (`ohana-db`, db.t4g.micro, 20GB gp3): base `ohana_moments`.
+- **ECR** (`ohana-app`): imágenes Docker.
+- **S3** (`ohana-uploads-717319160926`): imágenes subidas desde el panel admin y por
+  clientes (`S3_UPLOADS_BUCKET`); lectura pública solo del prefijo `uploads/`.
+- Roles IAM: `ohana-apprunner-ecr-access` (pull de ECR) y `ohana-apprunner-instance`
+  (PutObject en el bucket de uploads).
 
-## Backend Variables
+Todas las credenciales reales están en `deploy/.env.production` (**gitignored**).
+
+## Redeploy (después de cambios de código)
+
+```bash
+bash deploy/aws-deploy.sh
+```
+
+Hace: build de la imagen → push a ECR → `start-deployment` en App Runner.
+
+## Variables del backend en producción
+
+Configuradas como variables de entorno del servicio App Runner:
 
 ```bash
 NODE_ENV=production
 PORT=4000
-DATABASE_URL=postgresql://...
-JWT_SECRET=<long-random-secret>
+SERVE_FRONTEND=true          # el backend sirve frontend/dist (mismo origen, sin CORS)
+DATABASE_URL=...             # ver deploy/.env.production
+JWT_SECRET=...               # ver deploy/.env.production
 JWT_EXPIRES_IN=7d
-FRONTEND_URL=https://your-frontend-domain.com
-PAYMENT_PROVIDER=external
-PAYMENT_CHECKOUT_BASE_URL=https://your-payment-provider-checkout-url
+PAYMENT_PROVIDER=external    # sin PAYMENT_CHECKOUT_BASE_URL => checkout simulado
+S3_UPLOADS_BUCKET=ohana-uploads-717319160926
+AWS_REGION=us-east-1
 ```
 
-`FRONTEND_URL` may contain comma-separated origins if you deploy preview and production domains.
+El frontend se compila dentro del Dockerfile con `VITE_API_URL=/api` (mismo origen).
 
-## Frontend Variables
+## Base de datos
+
+Sin migraciones de Prisma: el schema canónico + seed de Lima vive en
+`docker/postgres/init/01-schema.sql`. Para (re)sembrar la base cloud:
 
 ```bash
-VITE_API_URL=https://your-backend-domain.com/api
+docker exec -i ohana-postgres psql "$DATABASE_URL" -v ON_ERROR_STOP=1 < docker/postgres/init/01-schema.sql
 ```
 
-## Database Seed
+⚠️ El seed resetea las tablas. La contraseña del admin en producción ya NO es la del
+seed: se actualizó a la de `deploy/.env.production` (variable `ADMIN_PASSWORD`).
+Si vuelves a sembrar, vuelve a ejecutar el UPDATE del hash del admin.
 
-This project does not use Prisma migrations. The canonical schema and Lima catalog seed live in:
+## Notas de seguridad / producción
 
-```bash
-docker/postgres/init/01-schema.sql
-```
+- No se almacenan datos de tarjeta; el pago con tarjeta requiere integrar un
+  checkout externo (Culqi/Izipay/Mercado Pago) vía `PAYMENT_CHECKOUT_BASE_URL`.
+- El security group del RDS permite 5432 desde internet (necesario para App Runner
+  sin VPC connector). Mitigado con contraseña fuerte; mejora recomendada: VPC
+  connector de App Runner + cerrar el SG.
+- Rota `JWT_SECRET` y `ADMIN_PASSWORD` si se filtra `deploy/.env.production`.
 
-For a cloud PostgreSQL database, run from the repository root:
+## Costos aproximados (us-east-1)
 
-```bash
-psql "$DATABASE_URL" -f deploy/seed-cloud.sql
-```
+- RDS db.t4g.micro + 20GB gp3: ~US$14/mes
+- App Runner 1 vCPU / 2GB: ~US$10/mes en reposo + cómputo activo por uso
+- S3/ECR: centavos
 
-## Build Commands
-
-Backend:
-
-```bash
-pnpm install
-pnpm run prisma:generate
-pnpm run start:backend
-```
-
-Frontend:
-
-```bash
-pnpm install
-pnpm run build:frontend
-```
-
-## Production Notes
-
-- Do not store card data in this app.
-- Use an external hosted checkout provider for card payments.
-- Rotate `JWT_SECRET` before production.
-- Keep `FRONTEND_URL` strict in production; do not use wildcard CORS.
+Para pausar gastos: `aws rds stop-db-instance --db-instance-identifier ohana-db` y
+`aws apprunner pause-service --service-arn <ARN>`.
